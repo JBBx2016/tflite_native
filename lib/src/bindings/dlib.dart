@@ -2,7 +2,6 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 
-import 'dart:cli' as cli;
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:isolate' show Isolate;
@@ -37,20 +36,14 @@ String _getObjectFilename() {
 }
 
 /// TensorFlowLite C library.
-DynamicLibrary tflitelib = () {
-  String objectFile;
-  if (Platform.script.path.endsWith('.snapshot')) {
-    // If we're running from snapshot, assume that the shared object
-    // file is a sibling.
-    objectFile =
-        File.fromUri(Platform.script).parent.path + '/' + _getObjectFilename();
-  } else {
-    final rootLibrary = 'package:tflite_native/tflite.dart';
-    final blobs = cli
-        .waitFor(Isolate.resolvePackageUri(Uri.parse(rootLibrary)))
-        .resolve('src/blobs/');
-    objectFile = blobs.resolve(_getObjectFilename()).toFilePath();
-  }
+DynamicLibrary tflitelib;
 
-  return DynamicLibrary.open(objectFile);
-}();
+Future<void> initTfLiteLib() async {
+  final rootLibrary = 'package:tflite_native/tflite.dart';
+  final uri = await Isolate.resolvePackageUri(Uri.parse(rootLibrary));
+  final blobs = uri
+      .resolve('src/blobs/');
+  String objectFile = blobs.resolve(_getObjectFilename()).toFilePath();
+
+  tflitelib = DynamicLibrary.open(objectFile);
+}
